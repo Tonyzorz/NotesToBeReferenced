@@ -35,16 +35,16 @@ spring.banner.charset=UTF-8
  웹 프로젝트라면 war 파일로 패키징해야한다. 부트는 jar and war로 
 패키징 선택이 가능하다.
 
-Src/main/java 에는 일반적인 자바소스를 등록하고, src/main/resources
-에는 자바 소스가 아닌 xml이나 프로퍼티 파일들을 등록한다. 
+Src/main/java 에는 일반적인 자바소스를 등록하고, src/main/resources에는 
+자바 소스가 아닌 xml이나 프로퍼티 파일들을 등록한다. 
 Resources 안에있는 static은 html같은 정적인 파일을 저장. 
 
 Pom.xml안에 parent를 이용해서 또 다른 pom설정을 상속할 수 있다. 
 눈에 보이지는 않지만 부모 설정 파일로부터 수많은 디펜덴시 설정을 
 상속받아 가지게 되는 것이다. 
 
-@ComponentScan(basePackages= {"com.example.demo","com.ruby"})
-이부분을 메인클래스위에 추가해서 다른 패키지에있는 다른 클래스들을
+@ComponentScan(basePackages= {"com.example.demo","com.ruby"})이부분을
+ 메인클래스위에 추가해서 다른 패키지에있는 다른 클래스들을
 빈에 등록해서 사용할 수 있다.
 
 @RestController는 jsp같은 뷰를 별도로 만들지 않는 대신에 컨트롤러
@@ -113,3 +113,4 @@ jsp를 사용하기 위한 의존성들...
 </dependency>
 
 sql error 1366==cant insert korean into the db 
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="EUC-KR"%>
