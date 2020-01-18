@@ -1,8 +1,4 @@
-
-# UsefulThingsForCoding
-Things that might come in handy later on in the future!
-
-## Linux command notes 
+# Linux command notes 
 
 Studying terminal commands from [linuxcommand](http://linuxcommand.org/index.php), all credits goes to this site. 
 
