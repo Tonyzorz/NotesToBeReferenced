@@ -1,0 +1,265 @@
+============================CentOS 7 docker install=========================================================
+1. docker 설치
+	sudo yum check-update
+	sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+	sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+	sudo yum install docker
+	sudo chmod 666 /var/run/docker.sock
+	sudo systemctl start docker
+	sudo systemctl enable docker
+	(닥커 설치 확인, client와 server 같이 출력시 성공) docker version
+
+2. 이미지 다운 후 이미지 실행
+	docker pull tonyzorz/centos7ss:latest
+	docker run -it -p 80:80 -p 5710:5710 tonyzorz/centos7ss:latest
+	(container 안)
+	/etc/init.d/forever start 
+	/etc/init.d/nginx start
+	
+	127.0.0.1/#user/signin 으로 접속 
+	---끝---
+3. exit한 컨테이너 다시 실행 :
+	a. container 실행중 인지 확인
+		docker ps
+		실행중 = docker exec -it 컨테이너이름 /bin/bash
+		실행 x = docker start -i containerName
+	
+4. log 위치
+		tail -f /var/www/drone-control/log/drone-control.log
+		/var/www/drone-control/drone_telemetry
+		tail -f /logs/drms/dcs/drone-control.log
+		tail -f /logs/drms/ss/development.log (this is nginx log = ss)
+		
+		/opt/nginx/logs/access.log
+(닥커 허브에 이미지 만들어야 할떄)	https://hub.docker.com/signup 에서 가입
+	
+============================CentOS 8 docker install===================================
+CentOS 8 이후 default package repository에 docker는 제공되지 않고 podman + buildah로 대체되었다.
+
+1. 
+	sudo yum -y remove podman
+	sudo yum -y install oci-systemd-hook libva
+	dnf install 'dnf-command(config-manager)'
+	dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+	sudo dnf -y install docker-ce docker-ce-cli containerd.io --nobest
+	systemctl enable docker
+	systemctl restart docker.service
+
+
+======================================================================================
+==================================CentOS 안에서 dcs 다운로드===============================
+1. 유저 생성
+	yum install passwd
+	adduser smdr
+	passwd smdr
+2. nvm 설치
+	curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
+	source ~/.bashrc
+	nvm install 11.1.0
+	nvm alias default 11.1.0
+3. forever 설치
+	npm install -g forever
+	
+	(docker host)
+	docker cp cotrol_server_config mycontainer:/root/cotrol_server_config
+	
+	(docker container)
+	cp ~/cotrol_server_config/forever /etc/init.d
+	chmod +x /etc/init.d/forever
+
+4. 소스 배포
+	(docker host)
+	docker cp drone-control_20200309 mycontainer:/var/www/drone-control
+	
+	(docker container)
+	chown -R smdr:smdr /var/www/drone-control
+	mkdir /var/www/pids
+	chown -R smdr:smdr /var/www/pids
+	mkdir /var/www/drone-control/log
+	chown -R smdr:smdr /var/www/drone-control/log
+	
+	mkdir /var/run/drone
+	chown -R smdr:smdr /var/run/drone
+	chmod +x /var/run/drone
+
+docker 실행 
+	docker run tonyzorz/centosdcs -p 5710:5710 -d
+	docker exec -it centosServers(containerName) /bin/bash
+
+	
+exception.....
+	만약 npm을 root에 설치를 했을때, 다시 smdr와서 재설치 시 
+	export NVM_DIR="$INSTALL_DIR" 터미널에 입력 
+	
+	log는 
+	tail -f /var/www/drone-control/log/drone-control.log
+	
+	dcs 설정 파일은
+	vim /var/www/drone-control/config/default.json
+	실행중
+	docker start containerName
+	docker exec -it containerName /bin/bash
+
+UTM......
+	설정은 vim ~/Downloads/UTMClient-user_v1.0.2/simul/config_simul.txt
+	실행은 ~/Downloads/UTMClient-user_v1.0.2/simul/run_ardupilot_simulator.sh &
+	드론은 ~/Downloads/UTMClient-user_v1.0.2/simul/run_simul.sh 
+	
+만약에 forever 프로세스를 죽였으면 이렇게 :
+	forever 파일을 작동하면 pidfile를 생성, 생성된 파일을 강제적으로 지워주면 된다.
+	vim forever에 있는 경로 찾아가서 
+	rm /var/run/drone/drone-control.pid 
+****실행*****
+/etc/init.d/nginx start
+/etc/init.d/forever start
+======================================================================================
+==================================CentOS 안에서 SS 다운로드================================
+
+1. centos7 container 안에서 작업을 위해 컨테이너 생성 후 이미지 계정에 생성
+	docker run -it --name centos7ss centos:7
+	docker stop centos7ss
+	docker login
+	docker commit centos7ss tonyzorz/centos7ss
+	docker push tonyzorz/centos7ss
+	
+	docker run -it --name centos7ss tonyzorz/centos7ss
+	docker attach centos7ss
+
+2. 필수 패키지 설치
+	gem install rails -v 5.0.1 --no-ri --no-rdoc
+	gem install sprockets -v 3.7.2
+	
+	docker cp service_server_config centos7ss:/home/smdr
+	cp /home/smdr/service_server_config/nginx.sh /etc/init.d/
+	chmod +x /etc/init.d/nginx.sh
+	cp /home/smdr/service_server_config/nginx.conf /opt/nginx/conf/
+	
+	docker cp drone_service_20200310 centos7ss:/var/www/drone_service
+	
+	yum -y install crontabs
+	
+	cd /var/www/drone_service
+	
+	passenger-config --root
+	vi /opt/nginx/conf/nginx.conf
+		passenger_root 버전 맞춰주기
+
+passenger Permission denied 발생 시 :
+	chown -R smdr:smdr /logs/drms/ss/delayed_job.log
+	mkdir /logs/tlo/ss
+	touch /logs/tlo/ss/ss_tlo.log
+	chown -R smdr:smdr /logs/tlo/ss/ss_tlo.log
+	
+	docker run -it -p 80:80 tonyzorz/centos7ss:latest
+	
+	if no daemon :
+		yum install -y initscripts
+		
+ss telemetry log : /var/www/drone-control/drone_telemetry
+nginx ss log : /logs/drms/ss/development.log
+	
+======================================================================================
+==================================Window firewall ====================================
+Windows firewall -> advanced settings -> new rules(inbound setting right) -> add port
+	
+======================================================================================
+======================================================================================
+export NVM_DIR="$INSTALL_DIR"
+#docker 실행 
+sudo service docker start
+
+#user is not in the sudoers file
+su 
+visudo
+##root ALL=(ALL) ALL 밑에 user ALL=(ALL) ALL 추가
+
+======================================================================================
+======================================================================================
+
+pidof firefox
+firefox -P 
+
+##checks for running port 
+sudo lsof -i -P -n | grep LISTEN
+
+======================================================================================
+======================================================================================
+
+###if cannot connect to the docker daemon at unix:///var/run/docker.sock
+1. try with sudo, if not,
+2. sudo dockerd
+
+
+=================================dcs 설치======================================
+======================================================================================
+
+sudo adduser smdr
+sudo passwd smdr
+su 
+visudo
+smdr  ALL=(ALL) ALL
+
+chown -R smdr:smdr /var/www/drone-control/
+mkdir /var/www/pids
+
+chown -R smdr:smdr /var/www/pids
+
+sudo mkdir /var/run/drone
+chown -R smdr:smdr /var/run/drone
+
+================do not kill forever process using kill===================
+forever list
+forever stop
+
+==================================docker 명령어====================================
+1. container 다 삭제
+docker container prune
+docker rm -vf $(docker ps -a -q)
+2. 이미지 다 삭제
+docker rmi -f $(docker images -a -q)
+
+
+
+============================docker 커밋 그리고 이미지 포스팅===================================
+1. 컨테이너를 실행
+	$ docker run -it --name mycontainer1 --rm ubuntu:latest
+2. 실행중인 컨테이너에 기타 등등 설치
+3. docker ps -a를 통해 컨테이너id/이름으로 docker hub에 repository를 생성후 커밋
+형식 : docker commit [ContainerID] [Repository[:Tag]
+	$ docker commit mycontainer1 tonyzorz/ubuntu-git
+4. 커밋 후 repository에 저장, repository가 없을시 repository를 저장
+형식 : docker push <yourusername>/ubuntu-git
+	$ docker push <yourusername>/ubuntu-git
+
+============================firewall====================================================
+firewall-cmd --add-port=80/tcp --zone=public --permanent
+firewall-cmd --reload
+
+
+==========================docker .tar 파일 통채로 배포 방법======================================
+1. container의 아이디 또는 이름을 가지고 .tar파일로 저장
+	sudo docker export ubuntu > ubuntu_export.tar
+2. .tar 파일을 다운받기
+	cat ubuntu_export.tar | sudo docker import - ubuntu:18.04
+													(이미지 이름)
+=============================Install CentOS 7 GUI ==========================================================
+1. Set up network 
+	nmtui
+		Choose “Automatic” in IPv4 CONFIGURATION and check Automatically connect check box and press OK and quit from Network manager.
+2. Download etc
+	sudo yum -y groups install "GNOME Desktop"
+	echo "exec gnome-session" >> ~/.xinitrc
+	systemctl set-default graphical.target
+	reboot
+	
+
+
+=============================자료들============================================================
+1. docker export 와 save의이 차이
+https://medium.com/@sh.tsang/docker-tutorial-4-exporting-container-and-saving-image-c3a7d792cfb6
+2. docker commit + docker image post
+https://rominirani.com/docker-tutorial-series-part-5-building-your-own-docker-images-b4a448b44afc
+3. 다커 기초 설명
+https://subicura.com/2017/01/19/docker-guide-for-beginners-1.html
+https://subicura.com/2017/01/19/docker-guide-for-beginners-2.html
+https://subicura.com/2017/02/10/docker-guide-for-beginners-create-image-and-deploy.html
