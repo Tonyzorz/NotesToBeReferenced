@@ -1,0 +1,81 @@
+SS
+
+redis
+
+/etc/redis/6379.conf
+ - /logs/drms/redis/redis_6379.log
+/etc/init.d/redis_6379
+ - /var/www/pids/drone/redis_6379.pid
+
+god
+
+/etc/init.d/god
+ - /var/www/pids/drone/god.pid
+ - /etc/god.conf
+
+/etc/god.conf
+ - /var/www/script/delayed_job_development.god
+
+/var/www/script/delayed_job_development.god
+ - /var/www/drone_service/bin/delayed_job
+ - /var/www/drone_service/tmp/pids/delayed_job.pid
+ 
+nginx
+
+/etc/init/nginx
+
+/opt/nginx/conf/nginx.conf
+ - /var/www/drone_service/public
+ 
+ 
+ruby
+
+/var/www/drone_service/config/settings/development.yml *
+
+/var/www/drone_service/config/environments/development.rb
+ - /logs/drms/ss/development.log
+ 
+/var/www/drone_service/config/initializers/lg_tlo_log.rb
+ - /logs/tlo/ss/ss_tlo.log
+ 
+/var/www/drone_service/config/initializers/delayed_job_config.rb
+ - /logs/drms/ss/delayed_job.log
+
+/var/www/drone_service/lib/tasks/create_tlo_log.rake
+ - /logs/tlo/ss/ss_tlo.log
+ - /logs/tlo/dcs/dcs_tlo.log
+ - 5분씩 끊어서 tlo로그 생성
+
+
+
+DCS
+
+nodejs
+
+/var/www/drone-control/config/default.json
+
+/var/www/drone-control/lib/tlo_log.js
+ - /logs/tlo/dcs/dcs_tlo.log
+
+forever
+
+/etc/init/forever
+ - /var/www/drone-control
+ - /var/www/pids/drone/drone-control.pid
+ - /logs/drms/dcs/drone-control.log
+
+
+
+port
+
+nginx 80,443
+redis 6379
+mgs 8080
+jik_cam 8080
+player 15490
+ms 8080
+scs 8080
+droneTcp 5710
+droneTls 5740
+
+

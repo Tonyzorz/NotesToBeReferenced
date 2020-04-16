@@ -1,0 +1,41 @@
+
+===========================================================================================
+DCS 설정 - /var/www/drone-control/config/default.json
+		DCS 실행 port - "pierURL" : "http://127.0.0.1:3000"
+		SS와 연결 - "ServiceURL" : "http://127.0.0.1"
+		          "ServiceWsURL" : "ws://127.0.0.1/cable"
+		UTM 통신 - "DroneTcpPort" : "5710"
+		UTM에서 받은 telemetry - "TelemetryFolder" : "/../drone_telemetry"
+		
+		
+SS 설정 - /var/www/drone_service/config/settings/development.yml
+		telemetry 읽기 - 
+			drone: 
+				feature: 
+					telemetry_path: '/var/www/drone-control/drone_telemetry/'
+		mgs - 
+		scs - host: '192.168.123.83' 
+			  port: '8089'
+		
+redis 설정 - /etc/redis/6379.config	
+		port - port 6379
+		ss bind - bind 127.0.0.1
+		
+forever 설정 - 
+	/etc/init.d/forever
+	
+nginx 설정  - 
+	/etc/init.d/nginx
+	/opt/nginx/conf/nginx.conf(ruby 설정등)
+
+god 설정 - 
+		/etc/init.d/god
+		/etc/god.conf
+			/var/www/script/delayed_job_development.god
+
+Logs
+telemetry - /var/www/drone-control/drone_telemetry 
+dcs - /logs/drms/dcs/drone-control.log (heartbeat)
+ss - /logs/drms/ss/development.log (nginx) 
+redis - /logs/drms/redis/redis_6379.log
+

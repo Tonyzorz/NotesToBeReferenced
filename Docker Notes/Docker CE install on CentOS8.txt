@@ -4,9 +4,10 @@
 	sudo yum install -y yum-utils device-mapper-persistent-data lvm2
 	sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 	sudo yum install docker
-	sudo chmod 666 /var/run/docker.sock
 	sudo systemctl start docker
 	sudo systemctl enable docker
+	sudo chmod 666 /var/run/docker.sock
+
 	(닥커 설치 확인, client와 server 같이 출력시 성공) docker version
 
 2. 이미지 다운 후 이미지 실행

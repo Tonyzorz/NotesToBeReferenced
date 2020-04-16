@@ -1,0 +1,179 @@
+yum update -y
+yum install -y git wget curl which tar libcurl-devel gcc gcc-c++ readline-devel zlib-devel libyaml-devel libffi-devel openssl-devel autoconf automake libtool bison postgresql-libs postgresql-devel
+
+adduser smdr
+passwd smdr
+
+cd /root/Downloads
+
+tar -xvf service_server_config.tar
+tar -xvf cotrol_server_config.tar
+
+cd ~
+
+gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+\curl -sSL https://get.rvm.io | bash -s stable
+source /etc/profile.d/rvm.sh
+usermod -aG rvm smdr
+
+rvm install 2.3.3
+rvm use 2.3.3 --default
+
+gem install rails -v 5.0.1 --no-ri --no-rdoc
+
+gem install god
+
+gem install passenger -v 6.0.2 --no-rdoc --no-ri
+
+passenger-install-nginx-module
+
+mkdir /var/www
+
+cd /var/www
+
+cp /root/Downloads/drone_service.tar /var/www
+
+tar -xvf drone_service.tar
+
+chown -R smdr:smdr /var/www
+
+mkdir -p /logs/drms/ss
+mkdir -p /logs/drms/redis
+mkdir -p /logs/tlo/ss
+mkdir -p /logs/drms/dcs
+mkdir -p /logs/tlo/dcs
+
+chmod -R 777 /logs
+
+
+cd /root
+
+wget http://download.redis.io/releases/redis-5.0.0.tar.gz
+
+tar -xzf redis-5.0.0.tar.gz
+
+cd /root/redis-5.0.0
+
+make
+
+make install
+
+cd /root/redis-5.0.0/utils/
+
+./install_server.sh
+
+mkdir -p /var/www/pids/drone
+
+touch /var/www/pids/drone/redis_6379.log
+
+touch /var/www/pids/drone/god.pid
+
+chown -R smdr:smdr /var/www/pids
+
+chown -R smdr:smdr /var/lib/redis/6379
+
+\cp -f /root/Downloads/service_server_config/6379.conf /etc/redis
+
+
+\cp -f /root/Downloads/service_server_config/redis_6379 /etc/init.d
+
+
+cp /root/Downloads/service_server_config/nginx /etc/init.d
+chmod +x /etc/init.d/nginx
+
+\cp -f /root/Downloads/service_server_config/nginx.conf /opt/nginx/conf 
+
+cp /root/Downloads/service_server_config/god /etc/init.d
+chmod +x /etc/init.d/god
+
+cp /root/Downloads/service_server_config/god.conf /etc/
+
+mkdir -p /var/www/script
+
+cp /root/Downloads/service_server_config/delayed_job_development.god /var/www/script
+
+chown -R smdr:smdr /var/www/script
+chmod -R 755 /var/www/script
+ 
+
+
+cd /usr/local/rvm/bin
+ln -s /usr/local/rvm/wrappers/ruby-2.3.3/god bootup_god
+
+
+chkconfig god on
+
+cd /var/www/drone_service
+
+gem install whenever
+whenever --update-crontab --set environment=development
+
+cd /var/www/drone_service
+
+
+
+RAILS_ENV=development bundle install
+RAILS_ENV=development bundle exec rake db:migrate
+RAILS_ENV=development bundle exec rake db:seed
+RAILS_ENV=development bundle exec rake assets:clobber
+RAILS_ENV=development bundle exec rake assets:precompile
+
+chmod -R 777 tmp/ log/ db/
+chmod -R 755 bin/
+
+firewall-cmd --add-port=80/tcp --zone=public --permanent
+firewall-cmd --reload
+
+/etc/init.d/nginx start
+/etc/init.d/god start
+
+
+=========================================================================================================================================================================
+
+dcs 설치
+
+yum install -y java-1.8.0-openjdk-devel.x86_64
+
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
+
+source ~/.bashrc
+
+nvm install 11.1.0
+
+nvm alias default 11.1.0
+
+su - smdr
+
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
+
+source ~/.bashrc
+
+nvm install 11.1.0
+
+nvm alias default 11.1.0
+
+npm install -g forever
+
+exit 
+
+cp /root/Downloads/cotrol_server_config/forever /etc/init.d 
+
+chmod +x /etc/init.d/forever
+
+cp /root/Downloads/drone-control.tar /var/www/
+
+cd /var/www
+
+tar -xvf drone-control.tar
+
+chown -R smdr:smdr /var/www/drone-control/
+
+npm install java --verbose --unsafe-perm --save
+
+npm install
+
+firewall-cmd --add-port=5710/tcp --zone=public --permanent
+firewall-cmd --reload
+
+/etc/init.d/forever start
+
